@@ -1,0 +1,91 @@
+My first RMD file
+=================
+
+
+###1. First, load the data from the current directory.
+
+```{r readata, results="hide"}
+mdata<- read.csv("activity.csv")
+
+```
+
+
+###2. What is mean total number of steps taken per day?
+
+####2.1 Total number steps
+
+```{r calulate total steps , fig.path='figure/' }
+mdata1<- mdata[!is.na(mdata$steps),]
+dt1<-aggregate(steps ~ date, mdata1, sum)
+hist(dt1$steps , xlab = "Total steps" , main = "Histogram fo total steps perday")
+```
+
+####2.2 Mean and Median of total number steps
+
+```{r calulate mean steps }
+meanTotal<-mean(dt1$steps)
+medianTotal<-median(dt1$steps)
+```
+So the mean of total number of steps taken per day is `r as.character(signif(meanTotal,7))` , the median of total number of steps taken per day is `r medianTotal`.
+
+###3. What is the average daily activity pattern?
+
+####3.1 5-minnute interval steps 
+```{r calulate interval average steps, fig.path='figure/' }
+dt2<-aggregate(steps ~ interval, mdata1, mean)
+plot(dt2,  type = "l")
+```
+
+####3.2 which interval has the max average steps
+```{r calulate max average steps interval}
+max<-dt2[dt2$steps == max(dt2$steps),]
+maxsteps<-max$steps
+maxstepsInterval<-max$interval
+```
+So the max average steps is `r maxsteps` of interval `r maxstepsInterval`
+
+###4. Imputing missing values
+####4.1 calculate total number of missing values in the dataset 
+```{r calulate total missing}
+miss <- mdata[is.na(mdata$steps),]
+nubmerofRows <- nrow(miss)
+```
+The number of the rows has missing values is `r nubmerofRows`
+
+####4.2 calculate total number of missing values in the dataset 
+```{r add missing values by interval mean,fig.path='figure/'}
+mdata2 <- mdata
+mdata2[which(is.na(mdata2$steps)),1]<-
+         dt2[as.character(mdata2[which(is.na(mdata2$steps)),3]),2]
+dt3<-aggregate(steps ~ date, mdata2, sum)
+hist(dt3$steps , xlab = "Total steps" , main = "Histogram fo total steps perday(input missing)")
+
+meanTotal2<-mean(dt3$steps)
+medianTotal2<-median(dt3$steps)
+```
+So the mean of total number of steps(input missing) taken per day is `r as.character(signif(meanTotal2,7))` , the median of total number of steps(input missing)  taken per day is `r as.character(signif(medianTotal2,7))`. Both the two values are slightly reduced, because this time we have add days which are missed previously
+
+###5. Are there differences in activity patterns between weekdays and weekends?
+```{r add compare weekday weekend,fig.path='figure/'}
+dayType <- function(dates) {
+  f <- function(date) {
+    if (weekdays(as.Date(date)) %in% c("星期六", "星期日")) {
+      "weekend"
+    }
+    else {
+      "weekday"
+    }
+  }
+  sapply(dates, f)
+}
+
+mdata1$dayType <- as.factor(dayType(mdata1$date))
+
+mdata1_we <- subset(mdata1, dayType == "weekend") 
+mdata1_wd <- subset(mdata1, dayType == "weekday") 
+daily_we<-aggregate(steps ~ interval, mdata1_we, mean)
+daily_wd<-aggregate(steps ~ interval, mdata1_wd, mean)
+par(mfrow=c(2,1))
+plot(daily_wd, type = "l", main = "Steps on Weekdays")
+plot(daily_we, type = "l", main = "Steps on Weekends")
+```
